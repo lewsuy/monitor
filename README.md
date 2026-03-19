@@ -1,6 +1,7 @@
 # 系统可用性监控平台
 
 轻量级 IT 基础设施可用性监控系统，支持 HTTP/HTTPS、SQL Server、Oracle 多种协议探测，提供实时看板、故障告警、多渠道通知。
+<img width="1920" height="945" alt="image" src="https://github.com/user-attachments/assets/54afb685-ce05-416a-add6-7de9895e4d2a" />
 
 ## 功能特性
 
