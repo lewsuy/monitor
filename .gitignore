@@ -1,0 +1,26 @@
+# 数据库和敏感文件（不上传）
+*.db
+*.db-wal
+*.db-shm
+.passwd
+.secret_key
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# 打包文件
+*.tar.gz
+*.zip
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store

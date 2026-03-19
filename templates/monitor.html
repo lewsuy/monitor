@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>系统可用性监控平台</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;
+  --border:#30363d;--border2:#484f58;
+  --text:#e6edf3;--text2:#8b949e;--text3:#6e7681;
+  --blue:#2f81f7;--blue2:#1f6feb;
+  --green:#3fb950;--green2:#238636;--green-bg:rgba(63,185,80,.15);
+  --red:#f85149;--red2:#da3633;--red-bg:rgba(248,81,73,.15);
+  --yellow:#d29922;--yellow-bg:rgba(210,153,34,.15);
+  --grey-bg:rgba(139,148,158,.1);
+  --radius:6px;--radius2:10px;
+}
+body{font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif;
+     font-size:13px;color:var(--text);background:var(--bg);min-height:100vh}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit}
+
+/* ── 顶栏 ── */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);
+        padding:0 20px;height:52px;display:flex;align-items:center;
+        justify-content:space-between;position:sticky;top:0;z-index:200}
+.topbar-left{display:flex;align-items:center;gap:24px}
+.logo{font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.nav-tabs{display:flex}
+.nav-tab{padding:0 16px;height:52px;display:flex;align-items:center;
+         font-size:13px;color:var(--text2);border-bottom:2px solid transparent;
+         cursor:pointer;transition:all .15s;white-space:nowrap}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.chip{padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:700;cursor:pointer}
+.chip-green{background:var(--green-bg);color:var(--green)}
+.chip-red{background:var(--red-bg);color:var(--red)}
+.chip-yellow{background:var(--yellow-bg);color:var(--yellow)}
+.probe-status{font-size:11px;color:var(--text3)}
+.btn-sm{padding:5px 12px;border-radius:var(--radius);border:1px solid var(--border2);
+        background:var(--bg3);color:var(--text);font-size:12px;transition:all .15s}
+.btn-sm:hover{background:var(--border)}
+
+/* ── 时间栏 ── */
+.timebar{background:var(--bg2);border-bottom:1px solid var(--border);
+         padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.time-picker-wrap{position:relative}
+.time-display{display:flex;align-items:center;gap:6px;padding:6px 12px;
+              background:var(--bg3);border:1px solid var(--border2);
+              border-radius:var(--radius);cursor:pointer;font-size:12.5px;
+              min-width:180px;user-select:none}
+.time-display:hover,.time-display.open{border-color:var(--blue)}
+.time-caret{color:var(--text3);font-size:10px;transition:transform .15s;margin-left:auto}
+.time-display.open .time-caret{transform:rotate(180deg)}
+.time-dropdown{position:absolute;top:calc(100% + 4px);left:0;background:#1c2128;
+               border:1px solid var(--border2);border-radius:var(--radius2);
+               padding:16px;display:none;z-index:300;min-width:500px;
+               box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.time-dropdown.show{display:flex;gap:16px}
+.td-left{flex:1;min-width:170px}
+.td-left h4,.td-right h4{font-size:11px;color:var(--text2);font-weight:700;
+                          text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.abs-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.abs-row label{font-size:11.5px;color:var(--text2);width:28px;flex-shrink:0}
+.abs-input{flex:1;background:var(--bg3);border:1px solid var(--border2);
+           border-radius:var(--radius);padding:6px 8px;color:var(--text);
+           font-size:12px;outline:none}
+.abs-input:focus{border-color:var(--blue)}
+.btn-apply{width:100%;background:var(--blue);color:#fff;border:none;
+           border-radius:var(--radius);padding:7px;font-size:12.5px;font-weight:700;margin-top:8px}
+.td-sep{width:1px;background:var(--border)}
+.td-right{min-width:220px}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.quick-item{padding:5px 8px;border-radius:4px;cursor:pointer;
+            font-size:12px;color:var(--blue);transition:background .15s}
+.quick-item:hover{background:var(--bg3)}
+.quick-item.active{background:var(--blue2);color:#fff}
+.recent-list{margin-top:10px}
+.recent-list h4{font-size:11px;color:var(--text3);font-weight:700;
+                text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.recent-item{padding:4px 6px;border-radius:4px;cursor:pointer;
+             font-size:11.5px;color:var(--text2);transition:background .15s}
+.recent-item:hover{background:var(--bg3)}
+.timebar-sep{width:1px;height:28px;background:var(--border)}
+.refresh-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+.refresh-wrap select{background:var(--bg3);border:1px solid var(--border);
+                     color:var(--text);border-radius:var(--radius);padding:4px 6px;font-size:12px}
+
+/* ── 主内容 ── */
+.main{padding:16px 20px}
+.page{display:none}
+.page.active{display:block}
+
+/* ── 顶部总览区 ── */
+.overview-bar{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.overview-card{background:var(--bg2);border:1px solid var(--border);
+               border-radius:var(--radius2);padding:14px}
+.overview-title{font-size:11.5px;font-weight:700;color:var(--text2);
+                text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;
+                display:flex;align-items:center;gap:6px}
+
+/* 活动告警 */
+.alert-list{display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto}
+.alert-item{display:flex;align-items:center;gap:8px;padding:5px 8px;
+            border-radius:var(--radius);background:var(--bg3);font-size:12px}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.alert-name{font-weight:700;color:var(--text);flex:1;overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap}
+.alert-dur{font-size:11px;color:var(--text3);white-space:nowrap}
+.alert-empty{text-align:center;padding:20px;color:var(--text3);font-size:12px}
+
+/* 热力图 */
+.heatmap{display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start}
+.hm-cell{width:36px;height:36px;border-radius:6px;cursor:pointer;
+         position:relative;transition:transform .15s,box-shadow .15s;flex-shrink:0}
+.hm-cell:hover{transform:scale(1.15);box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:10}
+.hm-up{background:var(--green)}
+.hm-down{background:var(--red)}
+.hm-degraded{background:var(--yellow)}
+.hm-unknown{background:var(--bg3);border:1px solid var(--border2)}
+.hm-tooltip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;
+            transform:translateX(-50%);background:#1c2128;border:1px solid var(--border2);
+            border-radius:var(--radius);padding:8px 10px;white-space:nowrap;
+            z-index:100;pointer-events:none;min-width:160px;font-size:12px;
+            box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.hm-cell:hover .hm-tooltip{display:block}
+.hm-tooltip-name{font-weight:700;color:var(--text);margin-bottom:4px;font-size:12.5px}
+.hm-tooltip-row{display:flex;justify-content:space-between;gap:16px;
+                color:var(--text2);font-size:11.5px;margin-top:2px}
+.hm-tooltip-val{color:var(--text);font-weight:700}
+
+/* ── 系统列表 ── */
+.system-list{display:flex;flex-direction:column;gap:8px}
+.system-row{background:var(--bg2);border:1px solid var(--border);
+            border-radius:var(--radius2);overflow:hidden;transition:border .2s}
+.system-row:hover{border-color:var(--border2)}
+.system-row.expanded{border-color:var(--blue)}
+.srow-header{padding:12px 16px;display:flex;align-items:center;gap:12px;
+             cursor:pointer;user-select:none}
+.srow-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-up{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot-down{background:var(--red);box-shadow:0 0 6px var(--red)}
+.dot-degraded{background:var(--yellow);box-shadow:0 0 6px var(--yellow)}
+.dot-unknown{background:var(--text3)}
+.srow-name{font-size:13.5px;font-weight:700;min-width:140px}
+.srow-type{font-size:10.5px;color:var(--text3);background:var(--bg3);
+           padding:2px 7px;border-radius:10px;border:1px solid var(--border)}
+.srow-avail{display:flex;gap:14px;margin-left:6px}
+.avail-item{text-align:center}
+.avail-label{font-size:10px;color:var(--text3);margin-bottom:1px}
+.avail-val{font-size:14px;font-weight:700}
+.avail-val.good{color:var(--green)}
+.avail-val.warn{color:var(--yellow)}
+.avail-val.bad{color:var(--red)}
+.avail-val.na{color:var(--text3)}
+.srow-ms{font-size:11.5px;color:var(--text3);margin-left:auto}
+.srow-incident{font-size:11px;color:var(--red);background:var(--red-bg);
+               padding:2px 8px;border-radius:10px}
+.srow-expand{margin-left:8px;color:var(--text3);font-size:11px;
+             transition:transform .2s;flex-shrink:0}
+.system-row.expanded .srow-expand{transform:rotate(180deg)}
+
+/* 时间轴 */
+.timeline-wrap{padding:0 16px 4px}
+.timeline-bar{display:flex;height:20px;gap:1px;border-radius:3px;overflow:hidden}
+.tl-cell{flex:1;min-width:2px;border-radius:1px;cursor:pointer;position:relative}
+.tl-cell:hover{opacity:.8}
+.tl-cell:hover .tl-tooltip{display:block}
+.tl-up{background:var(--green)}
+.tl-down{background:var(--red)}
+.tl-degraded{background:var(--yellow)}
+.tl-partial{background:#d29922}
+.tl-nodata{background:var(--bg3);border:1px solid var(--border)}
+.tl-tooltip{display:none;position:absolute;bottom:calc(100% + 4px);left:50%;
+            transform:translateX(-50%);background:#1c2128;border:1px solid var(--border2);
+            border-radius:4px;padding:4px 8px;font-size:11px;white-space:nowrap;
+            z-index:100;pointer-events:none;color:var(--text)}
+.timeline-labels{display:flex;justify-content:space-between;
+                 font-size:10px;color:var(--text3);margin-top:2px;padding:0 1px}
+.chart-wrap{padding:4px 16px 10px}
+.chart-label{display:flex;justify-content:space-between;font-size:10px;
+             color:var(--text3);margin-bottom:3px}
+.response-chart{width:100%;height:50px}
+
+/* 详情面板 */
+.detail-panel{border-top:1px solid var(--border);padding:16px}
+.detail-grid{display:grid;grid-template-columns:200px 1fr;gap:16px}
+.pie-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.pie-legend{display:flex;flex-direction:column;gap:4px;font-size:11.5px}
+.pie-legend-item{display:flex;align-items:center;gap:6px}
+.pie-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.metric-card{background:var(--bg3);border:1px solid var(--border);
+             border-radius:var(--radius);padding:10px 12px}
+.metric-label{font-size:10.5px;color:var(--text3);margin-bottom:4px}
+.metric-val{font-size:16px;font-weight:700}
+.metric-val.green{color:var(--green)}
+.metric-val.red{color:var(--red)}
+.incident-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.incident-table th{background:var(--bg3);color:var(--text2);font-weight:700;
+                   padding:7px 10px;text-align:left;border-bottom:1px solid var(--border2)}
+.incident-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.incident-table tr:hover td{background:var(--bg3)}
+.note-input{background:var(--bg3);border:1px solid var(--border);
+            border-radius:4px;padding:3px 7px;color:var(--text);
+            font-size:11.5px;width:100%;outline:none}
+.note-input:focus{border-color:var(--blue)}
+.history-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:12px}
+.history-card{background:var(--bg3);border:1px solid var(--border);
+              border-radius:var(--radius);padding:8px 10px;text-align:center}
+.history-label{font-size:10.5px;color:var(--text3);margin-bottom:4px}
+.history-val{font-size:14px;font-weight:700}
+.history-down{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* ── 系统管理表格 ── */
+.manage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.manage-title{font-size:15px;font-weight:700}
+.btn-add{display:flex;align-items:center;gap:6px;padding:7px 16px;
+         background:var(--green2);color:#fff;border:none;border-radius:var(--radius);
+         font-size:13px;font-weight:700}
+.btn-add:hover{background:#2ea043}
+.manage-table{width:100%;border-collapse:collapse}
+.manage-table th{background:var(--bg3);color:var(--text2);font-weight:700;
+                 padding:9px 12px;text-align:left;border-bottom:2px solid var(--border2);font-size:12px}
+.manage-table td{padding:10px 12px;border-bottom:1px solid var(--border);
+                 vertical-align:middle;font-size:12.5px}
+.manage-table tr:hover td{background:rgba(255,255,255,.02)}
+.drag-handle{cursor:grab;color:var(--text3);font-size:16px;padding:0 4px;
+             user-select:none;line-height:1}
+.drag-handle:active{cursor:grabbing}
+.dragging{opacity:.4;background:var(--bg3)}
+.drag-over{border-top:2px solid var(--blue)}
+.type-badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.type-http{background:rgba(47,129,247,.15);color:#79b8ff}
+.type-mssql{background:rgba(63,185,80,.15);color:#56d364}
+.type-oracle{background:rgba(210,153,34,.15);color:#e3b341}
+.action-btns{display:flex;gap:4px;flex-wrap:wrap}
+.btn-act{padding:3px 8px;background:var(--bg3);border:1px solid var(--border2);
+         color:var(--text2);border-radius:4px;font-size:11px;transition:all .15s}
+.btn-act:hover{border-color:var(--blue);color:var(--blue)}
+.btn-act.del:hover{border-color:var(--red);color:var(--red)}
+.btn-act.toggle:hover{border-color:var(--green);color:var(--green)}
+.move-btns{display:flex;gap:2px}
+.btn-move{padding:2px 6px;background:var(--bg3);border:1px solid var(--border);
+          color:var(--text3);border-radius:3px;font-size:11px;line-height:1.4}
+.btn-move:hover{border-color:var(--blue);color:var(--blue)}
+
+/* ── 通知设置 ── */
+.notify-grid{display:flex;flex-direction:column;gap:12px}
+.notify-channel{background:var(--bg2);border:1px solid var(--border);
+                border-radius:var(--radius2);overflow:hidden}
+.notify-ch-header{padding:12px 16px;display:flex;align-items:center;gap:12px;
+                  cursor:pointer;user-select:none}
+.notify-ch-icon{font-size:18px}
+.notify-ch-name{font-size:13.5px;font-weight:700;flex:1}
+.notify-ch-body{padding:0 16px 14px;border-top:1px solid var(--border)}
+.notify-ch-body.hidden{display:none}
+.toggle-switch{position:relative;width:36px;height:20px;cursor:pointer;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--bg3);
+               border:1px solid var(--border2);border-radius:10px;transition:.2s}
+.toggle-slider:before{position:absolute;content:"";width:14px;height:14px;
+                      left:2px;top:2px;background:var(--text2);border-radius:50%;transition:.2s}
+input:checked + .toggle-slider{background:var(--green2);border-color:var(--green2)}
+input:checked + .toggle-slider:before{transform:translateX(16px);background:#fff}
+.notify-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.notify-form-grid.single{grid-template-columns:1fr}
+.notify-field{display:flex;flex-direction:column;gap:4px}
+.notify-field label{font-size:11.5px;color:var(--text2);font-weight:700}
+.notify-input{background:var(--bg3);border:1px solid var(--border2);
+              border-radius:var(--radius);padding:7px 10px;color:var(--text);
+              font-size:12.5px;outline:none;transition:border .15s;width:100%}
+.notify-input:focus{border-color:var(--blue)}
+.notify-hint{font-size:11px;color:var(--text3);margin-top:2px}
+.rules-card{background:var(--bg2);border:1px solid var(--border);
+            border-radius:var(--radius2);padding:16px;margin-bottom:12px}
+.rules-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px}
+.rules-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.rule-item{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.rule-item input[type=checkbox]{width:14px;height:14px;cursor:pointer}
+.cooldown-row{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text2)}
+.cooldown-input{width:70px;background:var(--bg3);border:1px solid var(--border2);
+                border-radius:var(--radius);padding:5px 8px;color:var(--text);
+                font-size:12.5px;outline:none;text-align:center}
+.notify-save-btn{padding:8px 24px;background:var(--blue);color:#fff;border:none;
+                 border-radius:var(--radius);font-size:13px;font-weight:700;margin-top:14px}
+.notify-save-btn:hover{background:var(--blue2)}
+.ssl-radio-group{display:flex;gap:14px;margin-top:4px}
+.ssl-radio-group label{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12.5px}
+
+/* ── 模态框通用 ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+          z-index:500;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#1c2128;border:1px solid var(--border2);border-radius:var(--radius2);
+       padding:24px 28px;width:500px;max-width:96vw;max-height:90vh;
+       overflow-y:auto;box-shadow:0 16px 64px rgba(0,0,0,.6)}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px}
+.form-label .required{color:var(--red)}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border2);
+            border-radius:var(--radius);padding:7px 10px;color:var(--text);
+            font-size:13px;outline:none;transition:border .15s}
+.form-input:focus{border-color:var(--blue)}
+.form-input::placeholder{color:var(--text3)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-hint{font-size:11px;color:var(--text3);margin-top:4px}
+.form-section{border-top:1px solid var(--border);margin-top:14px;padding-top:14px}
+.form-section h4{font-size:11.5px;color:var(--text3);font-weight:700;
+                 text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.type-selector{display:flex;gap:8px;margin-bottom:4px}
+.type-opt{flex:1;padding:8px;background:var(--bg3);border:1px solid var(--border);
+          border-radius:var(--radius);cursor:pointer;text-align:center;
+          transition:all .15s;font-size:12.5px;color:var(--text2)}
+.type-opt.selected{border-color:var(--blue);background:rgba(47,129,247,.1);
+                   color:var(--blue);font-weight:700}
+.modal-btns{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+.btn-cancel{padding:7px 16px;background:var(--bg3);border:1px solid var(--border2);
+            color:var(--text2);border-radius:var(--radius);font-size:13px}
+.btn-cancel:hover{background:var(--border)}
+.btn-save{padding:7px 18px;background:var(--blue);color:#fff;border:none;
+          border-radius:var(--radius);font-size:13px;font-weight:700}
+.btn-save:hover{background:var(--blue2)}
+.test-result{display:none;padding:8px 12px;border-radius:var(--radius);
+             font-size:12.5px;margin-bottom:10px;font-weight:700}
+
+/* ── 告警对话框 ── */
+.alert-modal-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.alert-modal-table th{background:var(--bg3);color:var(--text2);font-weight:700;
+                      padding:8px 12px;text-align:left;border-bottom:1px solid var(--border2)}
+.alert-modal-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.alert-modal-table tr:hover td{background:rgba(255,255,255,.02)}
+.alert-filter{display:flex;gap:6px;margin-bottom:12px}
+.filter-btn{padding:4px 12px;border-radius:12px;border:1px solid var(--border2);
+            background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer}
+.filter-btn.active{background:var(--red2);border-color:var(--red);color:#fff}
+
+/* 导入模态框 */
+.import-drop-zone{border:2px dashed var(--border2);border-radius:var(--radius);
+                  min-height:110px;display:flex;flex-direction:column;
+                  align-items:center;justify-content:center;gap:8px;
+                  cursor:pointer;transition:all .2s;background:var(--bg3)}
+.import-drop-zone.dragover{border-color:var(--blue);background:rgba(47,129,247,.05)}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:20px;right:20px;border-radius:var(--radius);
+       padding:10px 18px;font-size:13px;font-weight:700;
+       box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transform:translateY(8px);
+       transition:all .25s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.info{background:#1f6feb;color:#fff}
+.toast.success{background:var(--green2);color:#fff}
+.toast.error{background:var(--red2);color:#fff}
+
+/* ── 通用 ── */
+.loading{display:flex;align-items:center;justify-content:center;
+         padding:40px;color:var(--text3);gap:8px}
+.spinner{width:16px;height:16px;border:2px solid var(--border2);
+         border-top-color:var(--blue);border-radius:50%;
+         animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:40px;color:var(--text3)}
+.section-title{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px}
+
+@media(max-width:768px){
+  .overview-bar{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .metric-grid{grid-template-columns:repeat(2,1fr)}
+  .history-grid{grid-template-columns:repeat(3,1fr)}
+  .time-dropdown{min-width:300px;flex-direction:column}
+  .td-sep{display:none}
+  .notify-form-grid{grid-template-columns:1fr}
+  .rules-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ════ 顶栏 ════ -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">📡 <span>可用性监控</span></div>
+    <div class="nav-tabs">
+      <div class="nav-tab active" id="tab-monitor" onclick="switchTab('monitor')">📊 监控总览</div>
+      <div class="nav-tab" id="tab-manage" onclick="requireLogin('manage')">⚙️ 系统管理</div>
+      <div class="nav-tab" id="tab-notify" onclick="requireLogin('notify')">🔔 通知设置</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="chip chip-green" id="chip-normal">✅ 0 正常</span>
+    <span class="chip chip-red" id="chip-down" onclick="openAlertModal()" style="cursor:pointer">❌ 0 故障</span>
+    <span class="chip chip-yellow" id="chip-degraded" style="display:none">⚠️ 0 降级</span>
+    <span class="probe-status" id="probe-status"></span>
+    <div id="auth-btns" style="display:flex;gap:6px">
+      <button class="btn-sm" id="btn-login-top" onclick="location.href='/login'" style="display:none">🔑 登录</button>
+      <button class="btn-sm" id="btn-pwd" onclick="openPwdModal()" style="display:none">🔒 修改密码</button>
+      <button class="btn-sm" id="btn-logout" onclick="location.href='/logout'" style="display:none">退出</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 时间栏 ════ -->
+<div class="timebar">
+  <div class="time-picker-wrap" id="time-picker-wrap">
+    <div class="time-display" id="time-display" onclick="toggleTimePicker()">
+      <span style="color:var(--text3)">🕐</span>
+      <span id="time-text">最近1小时</span>
+      <span class="time-caret">▼</span>
+    </div>
+    <div class="time-dropdown" id="time-dropdown">
+      <div class="td-left">
+        <h4>自定义时间段</h4>
+        <div class="abs-row"><label>自从</label><input class="abs-input" id="abs-from" type="text" placeholder="2026-01-01 00:00:00"></div>
+        <div class="abs-row"><label>到</label><input class="abs-input" id="abs-to" type="text" placeholder="2026-12-31 23:59:59"></div>
+        <button class="btn-apply" onclick="applyAbsoluteTime()">应用时间段</button>
+        <div class="recent-list" id="recent-list" style="display:none">
+          <h4>最近使用</h4>
+          <div id="recent-items"></div>
+        </div>
+      </div>
+      <div class="td-sep"></div>
+      <div class="td-right">
+        <h4>快捷选择</h4>
+        <div class="quick-grid" id="quick-grid"></div>
+      </div>
+    </div>
+  </div>
+  <div class="timebar-sep"></div>
+  <button class="btn-sm" onclick="expandAll()">📂 全部展开</button>
+  <button class="btn-sm" onclick="collapseAll()">📁 全部折叠</button>
+  <div class="timebar-sep"></div>
+  <div class="refresh-wrap">🔄 自动刷新
+    <select id="refresh-select" onchange="setAutoRefresh(this.value)">
+      <option value="0">关闭</option>
+      <option value="60" selected>1分钟</option>
+      <option value="300">5分钟</option>
+    </select>
+  </div>
+</div>
+
+<!-- ════ 主内容 ════ -->
+<div class="main">
+
+  <!-- 监控总览页 -->
+  <div class="page active" id="page-monitor">
+    <!-- 顶部总览区 -->
+    <div class="overview-bar">
+      <!-- 左：活动告警 -->
+      <div class="overview-card">
+        <div class="overview-title">🔴 活动告警 <span id="alert-count" style="color:var(--red)">0</span></div>
+        <div class="alert-list" id="alert-list">
+          <div class="alert-empty">✅ 当前无故障</div>
+        </div>
+      </div>
+      <!-- 右：热力图 -->
+      <div class="overview-card">
+        <div class="overview-title">🗺️ 系统热力图</div>
+        <div class="heatmap" id="heatmap"></div>
+      </div>
+    </div>
+    <!-- 系统列表 -->
+    <div id="system-list" class="system-list">
+      <div class="loading"><div class="spinner"></div>加载中...</div>
+    </div>
+  </div>
+
+  <!-- 系统管理页 -->
+  <div class="page" id="page-manage">
+    <div class="manage-header">
+      <div class="manage-title">监控系统管理</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm" onclick="exportSystems()">⬇️ 导出配置</button>
+        <button class="btn-sm" onclick="openImportModal()">⬆️ 导入配置</button>
+        <button class="btn-add" onclick="openAddModal()">＋ 添加监控系统</button>
+      </div>
+    </div>
+    <div id="manage-table-wrap"><div class="loading"><div class="spinner"></div>加载中...</div></div>
+  </div>
+
+  <!-- 通知设置页 -->
+  <div class="page" id="page-notify">
+    <div id="notify-wrap"><div class="loading"><div class="spinner"></div>加载中...</div></div>
+  </div>
+
+</div>
+
+<!-- ════ Toast ════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ════ 告警对话框 ════ -->
+<div class="modal-bg" id="alert-modal">
+  <div class="modal" style="width:680px">
+    <h3>🔴 活动告警明细</h3>
+    <div class="alert-filter">
+      <button class="filter-btn active" id="f-all" onclick="filterAlerts('all')">全部</button>
+      <button class="filter-btn" id="f-down" onclick="filterAlerts('DOWN')">🔴 故障(DOWN)</button>
+      <button class="filter-btn" id="f-deg" onclick="filterAlerts('DEGRADED')">⚠️ 降级(DEGRADED)</button>
+    </div>
+    <div id="alert-modal-body"></div>
+    <div class="modal-btns"><button class="btn-cancel" onclick="closeModal('alert-modal')">关闭</button></div>
+  </div>
+</div>
+
+<!-- ════ 添加/编辑系统 ════ -->
+<div class="modal-bg" id="sys-modal">
+  <div class="modal">
+    <h3 id="modal-title">➕ 添加监控系统</h3>
+    <div class="form-group">
+      <label class="form-label">监控类型 <span class="required">*</span></label>
+      <div class="type-selector">
+        <div class="type-opt selected" id="type-http" onclick="selectType('http')">🌐 HTTP URL监控</div>
+        <div class="type-opt" id="type-mssql" onclick="selectType('mssql')">🗄️ SQL Server</div>
+        <div class="type-opt" id="type-oracle" onclick="selectType('oracle')">🔶 Oracle</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">系统名称 <span class="required">*</span></label>
+      <input class="form-input" id="f-name" placeholder="例：ERP系统、OA系统">
+    </div>
+    <div id="http-fields">
+      <div class="form-section"><h4>HTTP 配置</h4>
+        <div class="form-group">
+          <label class="form-label">监控地址 <span class="required">*</span></label>
+          <input class="form-input" id="f-url" placeholder="https://example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">副端点地址（可选，同一系统有多个URL时填写）</label>
+          <input class="form-input" id="f-url-secondary" placeholder="https://api.example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">期望状态码</label>
+          <input class="form-input" id="f-expected-code" value="200,301,302">
+          <div class="form-hint">多个用逗号分隔，返回这些状态码视为正常</div>
+        </div>
+      </div>
+    </div>
+    <div id="db-fields" style="display:none">
+      <div class="form-section"><h4>数据库配置</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">服务器地址 <span class="required">*</span></label>
+            <input class="form-input" id="f-db-host" placeholder="服务器IP地址">
+          </div>
+          <div class="form-group">
+            <label class="form-label">端口 <span class="required">*</span></label>
+            <input class="form-input" id="f-db-port" type="number" value="1433">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">数据库名 <span class="required">*</span></label>
+          <input class="form-input" id="f-db-name" placeholder="数据库名称">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">账号 <span class="required">*</span></label>
+            <input class="form-input" id="f-db-user" placeholder="登录账号">
+          </div>
+          <div class="form-group">
+            <label class="form-label">密码 <span class="required">*</span></label>
+            <input class="form-input" id="f-db-password" type="password" placeholder="请输入密码">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">TDS 协议版本（SQL Server）</label>
+          <select class="form-input" id="f-tds-version">
+            <option value="7.2">7.2 — SQL Server 2008 R2</option>
+            <option value="7.3">7.3 — SQL Server 2012 / 2014</option>
+            <option value="7.4">7.4 — SQL Server 2016 / 2017 / 2019</option>
+          </select>
+          <div class="form-hint">连接失败(20002错误)时，尝试调整此版本</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-section"><h4>探测参数</h4>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">轮询间隔（分钟）</label>
+          <input class="form-input" id="f-interval" type="number" value="5" min="1" max="60">
+        </div>
+        <div class="form-group">
+          <label class="form-label">超时时间（秒）</label>
+          <input class="form-input" id="f-timeout" type="number" value="10" min="3" max="60">
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="f-enabled" checked style="width:14px;height:14px">
+          <span class="form-label" style="margin:0">启用监控</span>
+        </label>
+      </div>
+    </div>
+    <div class="test-result" id="test-result"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('sys-modal')">取消</button>
+      <button class="btn-sm" id="btn-test" onclick="testConnection()"
+              style="border-color:var(--blue);color:var(--blue);font-weight:700">🔌 测试连接</button>
+      <button class="btn-save" onclick="saveSystem()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 导入配置 ════ -->
+<div class="modal-bg" id="import-modal">
+  <div class="modal" style="width:520px">
+    <h3>⬆️ 导入监控系统配置</h3>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:12.5px;font-weight:700;margin-bottom:3px">📋 CSV 模板说明</div>
+          <div style="font-size:11.5px;color:var(--text3);line-height:1.7">
+            HTTP系统填前几列即可；数据库系统需填连接信息<br>
+            <span style="color:var(--yellow)">⚠️ 密码列请填写后及时删除CSV文件</span>
+          </div>
+        </div>
+        <button class="btn-save" onclick="downloadTemplate()" style="white-space:nowrap;margin-left:14px">⬇️ 下载模板</button>
+      </div>
+    </div>
+    <div class="import-drop-zone" id="import-drop-zone"
+         onclick="document.getElementById('import-file-input').click()"
+         ondragover="importDragOver(event)" ondragleave="importDragLeave(event)" ondrop="importDrop(event)">
+      <input type="file" id="import-file-input" accept=".csv" style="display:none" onchange="handleImportFile(this.files[0])">
+      <div style="font-size:28px;opacity:.5" id="import-drop-icon">📂</div>
+      <div style="font-size:13px;color:var(--text2);font-weight:700" id="import-drop-text">点击选择 CSV 文件</div>
+      <div style="font-size:11.5px;color:var(--text3)">或将文件拖拽到此处</div>
+    </div>
+    <div id="import-preview" style="display:none;margin-top:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px" id="import-preview-title"></div>
+      <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius)">
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px" id="import-preview-table"></table>
+      </div>
+    </div>
+    <div id="import-result" style="display:none;margin-top:10px;padding:8px 12px;border-radius:var(--radius);font-size:12.5px;font-weight:700"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('import-modal')">关闭</button>
+      <button class="btn-save" id="btn-do-import" onclick="doImport()" style="display:none">✅ 确认导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 修改密码 ════ -->
+<div class="modal-bg" id="pwd-modal">
+  <div class="modal" style="width:380px">
+    <h3>🔒 修改登录密码</h3>
+    <div class="form-group"><label class="form-label">原密码 <span class="required">*</span></label>
+      <input class="form-input" id="pwd-old" type="password" placeholder="请输入原密码"></div>
+    <div class="form-group"><label class="form-label">新密码 <span class="required">*</span></label>
+      <input class="form-input" id="pwd-new1" type="password" placeholder="至少4位"></div>
+    <div class="form-group"><label class="form-label">确认新密码 <span class="required">*</span></label>
+      <input class="form-input" id="pwd-new2" type="password" placeholder="再次输入"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('pwd-modal')">取消</button>
+      <button class="btn-save" onclick="doChangePwd()">确认修改</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+//  时间管理
+// ════════════════════════════════════════
+const QUICK_RANGES = [
+  {label:"最近5分钟",mins:5},{label:"最近15分钟",mins:15},
+  {label:"最近30分钟",mins:30},{label:"最近1小时",mins:60},
+  {label:"最近3小时",mins:180},{label:"最近6小时",mins:360},
+  {label:"最近12小时",mins:720},{label:"最近24小时",mins:1440},
+  {label:"最近2天",mins:2880},{label:"最近7天",mins:10080},
+  {label:"最近30天",mins:43200},{label:"最近90天",mins:129600},
+  {label:"最近6个月",mins:259200},{label:"最近1年",mins:525600},
+  {label:"今天",special:"today"},{label:"昨天",special:"yesterday"},
+  {label:"本周",special:"thisweek"},{label:"本月",special:"thismonth"},
+];
+let currentRange = {label:"最近1小时",mins:60};
+let recentRanges = [];
+try { recentRanges = JSON.parse(localStorage.getItem("mon_recent")||"[]"); } catch(e){}
+let refreshTimer = null;
+
+function fmtDt(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+
+    String(d.getDate()).padStart(2,"0")+" "+String(d.getHours()).padStart(2,"0")+":"+
+    String(d.getMinutes()).padStart(2,"0")+":"+String(d.getSeconds()).padStart(2,"0");
+}
+function resolveRange(r){
+  const e=new Date(), s=new Date();
+  if(r.special==="today"){s.setHours(0,0,0,0);}
+  else if(r.special==="yesterday"){s.setHours(0,0,0,0);s.setDate(s.getDate()-1);e.setHours(0,0,0,0);}
+  else if(r.special==="thisweek"){s.setHours(0,0,0,0);s.setDate(s.getDate()-s.getDay());}
+  else if(r.special==="thismonth"){s.setDate(1);s.setHours(0,0,0,0);}
+  else{s.setTime(e.getTime()-(r.mins||60)*60000);}
+  return {start:fmtDt(s),end:fmtDt(e)};
+}
+function initQuickGrid(){
+  document.getElementById("quick-grid").innerHTML=QUICK_RANGES.map(r=>
+    `<div class="quick-item ${r.label===currentRange.label?'active':''}"
+       onclick='selectQuickRange(${JSON.stringify(r)})'>${r.label}</div>`
+  ).join("");
+}
+function updateRecentList(){
+  const wrap=document.getElementById("recent-list");
+  const el=document.getElementById("recent-items");
+  if(!recentRanges.length){wrap.style.display="none";return;}
+  wrap.style.display="block";
+  el.innerHTML=recentRanges.slice(0,5).map(r=>
+    `<div class="recent-item" onclick='selectQuickRange(${JSON.stringify(r)})'>${r.label||(r.abs?r.abs.start+" ~ "+r.abs.end:"")}</div>`
+  ).join("");
+}
+function selectQuickRange(r){
+  currentRange=r;
+  document.getElementById("time-text").textContent=r.label;
+  addRecent(r); closeTimePicker(); loadMonitor();
+}
+function addRecent(r){
+  recentRanges=recentRanges.filter(x=>JSON.stringify(x)!==JSON.stringify(r));
+  recentRanges.unshift(r); recentRanges=recentRanges.slice(0,10);
+  try{localStorage.setItem("mon_recent",JSON.stringify(recentRanges));}catch(e){}
+  updateRecentList(); initQuickGrid();
+}
+function applyAbsoluteTime(){
+  const from=document.getElementById("abs-from").value.trim();
+  const to=document.getElementById("abs-to").value.trim();
+  if(!from||!to){showToast("请填写起止时间","error");return;}
+  const r={label:from.slice(0,16)+" → "+to.slice(0,16),abs:{start:from,end:to}};
+  currentRange=r;
+  document.getElementById("time-text").textContent=r.label;
+  addRecent(r); closeTimePicker(); loadMonitor();
+}
+function toggleTimePicker(){
+  const dd=document.getElementById("time-dropdown");
+  const btn=document.getElementById("time-display");
+  dd.classList.toggle("show"); btn.classList.toggle("open");
+  if(dd.classList.contains("show")){
+    initQuickGrid(); updateRecentList();
+    const {start,end}=resolveRange(currentRange);
+    document.getElementById("abs-from").value=start;
+    document.getElementById("abs-to").value=end;
+  }
+}
+function closeTimePicker(){
+  document.getElementById("time-dropdown").classList.remove("show");
+  document.getElementById("time-display").classList.remove("open");
+}
+document.addEventListener("click",e=>{
+  if(!document.getElementById("time-picker-wrap").contains(e.target)) closeTimePicker();
+});
+function setAutoRefresh(secs){
+  if(refreshTimer) clearInterval(refreshTimer);
+  if(+secs>0) refreshTimer=setInterval(loadMonitor,+secs*1000);
+}
+
+// ════════════════════════════════════════
+//  认证状态
+// ════════════════════════════════════════
+let isLoggedIn=false;
+async function checkAuthStatus(){
+  try{
+    const r=await fetch("/api/auth/status");
+    isLoggedIn=(await r.json()).logged_in;
+  }catch(e){isLoggedIn=false;}
+  const btnL=document.getElementById("btn-login-top");
+  const btnP=document.getElementById("btn-pwd");
+  const btnO=document.getElementById("btn-logout");
+  if(isLoggedIn){btnL.style.display="none";btnP.style.display="";btnO.style.display="";}
+  else{btnL.style.display="";btnP.style.display="none";btnO.style.display="none";}
+}
+function requireLogin(tab){
+  if(isLoggedIn) switchTab(tab);
+  else if(confirm("此功能需要登录，是否前往登录页？")) location.href="/login";
+}
+function switchTab(tab){
+  ["monitor","manage","notify"].forEach(t=>{
+    document.getElementById("tab-"+t).classList.toggle("active",t===tab);
+    document.getElementById("page-"+t).classList.toggle("active",t===tab);
+  });
+  if(tab==="manage") loadManage();
+  if(tab==="notify") loadNotify();
+}
+
+// ════════════════════════════════════════
+//  监控总览
+// ════════════════════════════════════════
+let systemsData=[];
+let expandedSystems=new Set();
+let allAlerts=[];
+let alertFilter="all";
+
+async function loadMonitor(){
+  const {start,end}=resolveRange(currentRange);
+  try{
+    const r=await fetch(`/api/stats?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+    if(r.status===401){location.href="/login";return;}
+    const data=await r.json();
+    systemsData=data.systems||[];
+    renderSystemList(data,start,end);
+    updateChips(data);
+    renderHeatmap(data.systems||[]);
+    loadActiveAlerts();
+  }catch(e){
+    document.getElementById("system-list").innerHTML=`<div class="empty">❌ 加载失败: ${e.message}</div>`;
+  }
+}
+
+function updateChips(data){
+  document.getElementById("chip-normal").textContent=`✅ ${data.normal_count} 正常`;
+  document.getElementById("chip-down").textContent=`❌ ${data.down_count} 故障`;
+  const d=document.getElementById("chip-degraded");
+  d.textContent=`⚠️ ${data.degraded_count} 降级`;
+  d.style.display=data.degraded_count>0?"":"none";
+  document.getElementById("probe-status").textContent=`更新 ${fmtDt(new Date()).slice(11,19)}`;
+}
+
+// ── 热力图 ─────────────────────────────────────────────────────
+function renderHeatmap(systems){
+  const el=document.getElementById("heatmap");
+  if(!systems.length){el.innerHTML='<div class="empty" style="padding:16px;font-size:12px">暂无系统</div>';return;}
+  const clsMap={UP:"hm-up",DOWN:"hm-down",DEGRADED:"hm-degraded",UNKNOWN:"hm-unknown"};
+  const labelMap={UP:"🟢 正常",DOWN:"🔴 故障",DEGRADED:"⚠️ 降级",UNKNOWN:"❓ 未知"};
+  el.innerHTML=systems.map(s=>{
+    const cls=clsMap[s.current_status]||"hm-unknown";
+    const label=labelMap[s.current_status]||"未知";
+    const ms=s.current_ms>0?s.current_ms+"ms":"--";
+    const check=s.last_check?s.last_check.slice(11,19):"--";
+    const incHtml=s.incident_since
+      ?`<div class="hm-tooltip-row"><span>故障持续</span><span class="hm-tooltip-val" style="color:var(--red)">${timeSince(s.incident_since)}</span></div>`:"";
+    return `<div class="hm-cell ${cls}" onclick="scrollToSystem(${s.id})">
+      <div class="hm-tooltip">
+        <div class="hm-tooltip-name">${s.name}</div>
+        <div class="hm-tooltip-row"><span>状态</span><span class="hm-tooltip-val">${label}</span></div>
+        <div class="hm-tooltip-row"><span>响应</span><span class="hm-tooltip-val">${ms}</span></div>
+        <div class="hm-tooltip-row"><span>更新</span><span class="hm-tooltip-val">${check}</span></div>
+        ${incHtml}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function scrollToSystem(sid){
+  const row=document.getElementById("srow-"+sid);
+  if(row) row.scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+// ── 活动告警 ──────────────────────────────────────────────────
+async function loadActiveAlerts(){
+  try{
+    const r=await fetch("/api/incidents?open_only=1");
+    allAlerts=await r.json();
+    renderAlertList();
+  }catch(e){}
+}
+
+function renderAlertList(){
+  const el=document.getElementById("alert-list");
+  const cnt=document.getElementById("alert-count");
+  cnt.textContent=allAlerts.length;
+  if(!allAlerts.length){
+    el.innerHTML='<div class="alert-empty">✅ 当前无故障</div>'; return;
+  }
+  const show=allAlerts.slice(0,10);
+  el.innerHTML=show.map(a=>{
+    const dotColor=a.error_msg&&a.error_msg.includes("SQL")?"var(--yellow)":"var(--red)";
+    return `<div class="alert-item">
+      <div class="alert-dot" style="background:${dotColor}"></div>
+      <div class="alert-name">${a.system_name}</div>
+      <div class="alert-dur">${a.duration_str}</div>
+    </div>`;
+  }).join("");
+}
+
+// ── 告警对话框 ─────────────────────────────────────────────────
+function openAlertModal(){
+  alertFilter="all";
+  ["f-all","f-down","f-deg"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  document.getElementById("f-all").classList.add("active");
+  renderAlertModal();
+  document.getElementById("alert-modal").classList.add("show");
+}
+function filterAlerts(f){
+  alertFilter=f;
+  ["f-all","f-down","f-deg"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  const map={all:"f-all",DOWN:"f-down",DEGRADED:"f-deg"};
+  document.getElementById(map[f]).classList.add("active");
+  renderAlertModal();
+}
+function renderAlertModal(){
+  const filtered=alertFilter==="all"?allAlerts:
+    allAlerts.filter(a=>{
+      const isSQL=a.error_msg&&a.error_msg.includes("SQL");
+      if(alertFilter==="DEGRADED") return isSQL;
+      if(alertFilter==="DOWN") return !isSQL;
+      return true;
+    });
+  const el=document.getElementById("alert-modal-body");
+  if(!filtered.length){
+    el.innerHTML='<div class="empty">无告警记录</div>'; return;
+  }
+  el.innerHTML=`<table class="alert-modal-table">
+    <thead><tr><th>状态</th><th>系统名称</th><th>类型</th><th>开始时间</th><th>持续时长</th><th>错误原因</th></tr></thead>
+    <tbody>${filtered.map(a=>{
+      const isSQL=a.error_msg&&a.error_msg.includes("SQL");
+      const icon=isSQL?"⚠️":"🔴";
+      return `<tr>
+        <td>${icon}</td>
+        <td><b>${a.system_name}</b></td>
+        <td style="color:var(--text3)">${a.system_id>0?"":"副端点"}</td>
+        <td style="color:var(--text3);font-size:11.5px">${a.start_time}</td>
+        <td style="color:var(--red);font-weight:700">${a.duration_str}</td>
+        <td style="color:var(--text3);font-size:11.5px;max-width:200px;
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+          title="${a.error_msg}">${a.error_msg||"--"}</td>
+      </tr>`;
+    }).join("")}</tbody>
+  </table>`;
+}
+
+// ── 系统行列表 ─────────────────────────────────────────────────
+function renderSystemList(data,start,end){
+  const el=document.getElementById("system-list");
+  if(!data.systems||!data.systems.length){
+    el.innerHTML='<div class="empty">暂无监控系统，请在「系统管理」中添加</div>'; return;
+  }
+  el.innerHTML=data.systems.map(s=>renderSystemRow(s)).join("");
+  expandedSystems.forEach(sid=>{
+    const row=document.getElementById("srow-"+sid);
+    if(row) expandSystem(sid,start,end,row);
+  });
+}
+
+function avClass(v){
+  if(v==null) return "na";
+  if(v>=99.9) return "good";
+  if(v>=95)   return "warn";
+  return "bad";
+}
+function timeSince(dtStr){
+  const s=Math.floor((new Date()-new Date(dtStr))/1000);
+  if(s<60) return s+"秒";
+  if(s<3600) return Math.floor(s/60)+"分钟";
+  return Math.floor(s/3600)+"小时";
+}
+function fmtSec(s){
+  s=parseInt(s)||0;
+  if(s<60) return s+"秒";
+  if(s<3600) return Math.floor(s/60)+"分"+s%60+"秒";
+  if(s<86400) return Math.floor(s/3600)+"小时"+Math.floor(s%3600/60)+"分";
+  return Math.floor(s/86400)+"天"+Math.floor(s%86400/3600)+"小时";
+}
+
+function renderSystemRow(s){
+  const dotCls={UP:"dot-up",DOWN:"dot-down",DEGRADED:"dot-degraded",UNKNOWN:"dot-unknown"}[s.current_status]||"dot-unknown";
+  const avAll=s.avail_all!=null?s.avail_all.toFixed(2)+"%":"--";
+  const avCore=s.avail_core!=null?s.avail_core.toFixed(2)+"%":"--";
+  const ms=s.current_ms>0?s.current_ms+"ms":"--";
+  const inc=s.incident_since?`<span class="srow-incident">⚠️ 故障中 ${timeSince(s.incident_since)}</span>`:"";
+  return `<div class="system-row" id="srow-${s.id}">
+    <div class="srow-header" onclick="toggleSystem(${s.id})">
+      <div class="srow-status-dot ${dotCls}"></div>
+      <div class="srow-name">${s.name}</div>
+      <div class="srow-type">${s.type.toUpperCase()}</div>
+      <div class="srow-avail">
+        <div class="avail-item"><div class="avail-label">全天</div>
+          <div class="avail-val ${avClass(s.avail_all)}">${avAll}</div></div>
+        <div class="avail-item"><div class="avail-label">核心时段</div>
+          <div class="avail-val ${avClass(s.avail_core)}">${avCore}</div></div>
+      </div>
+      ${inc}
+      <div class="srow-ms">${ms}</div>
+      <div class="srow-expand">▼</div>
+    </div>
+    <div id="tl-${s.id}"></div>
+  </div>`;
+}
+
+async function toggleSystem(sid){
+  const row=document.getElementById("srow-"+sid);
+  if(row.classList.contains("expanded")){
+    row.classList.remove("expanded");
+    expandedSystems.delete(sid);
+    document.getElementById("tl-"+sid).innerHTML="";
+    return;
+  }
+  row.classList.add("expanded");
+  expandedSystems.add(sid);
+  const {start,end}=resolveRange(currentRange);
+  await expandSystem(sid,start,end,row);
+}
+
+async function expandSystem(sid,start,end,row){
+  const tlEl=document.getElementById("tl-"+sid);
+  tlEl.innerHTML='<div class="loading" style="padding:12px"><div class="spinner"></div>加载中...</div>';
+  try{
+    const [avData,incData,histData]=await Promise.all([
+      fetch(`/api/availability?system_id=${sid}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`).then(r=>r.json()),
+      fetch(`/api/incidents?system_id=${sid}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`).then(r=>r.json()),
+      fetch(`/api/history_summary/${sid}`).then(r=>r.json()),
+    ]);
+    renderExpandedContent(sid,avData,incData,histData,tlEl);
+  }catch(e){tlEl.innerHTML=`<div class="empty">加载失败: ${e.message}</div>`;}
+}
+
+function renderExpandedContent(sid,avData,incData,histData,container){
+  const tl=avData.timeline||[];
+  const sa=avData.stats_all||{};
+  const sc=avData.stats_core||{};
+  const scMap={UP:"tl-up",DOWN:"tl-down",DEGRADED:"tl-degraded",PARTIAL:"tl-partial",NODATA:"tl-nodata"};
+  const tlCells=tl.map(t=>
+    `<div class="tl-cell ${scMap[t.status]||'tl-nodata'}">
+      <div class="tl-tooltip">${t.time.slice(5,16)}<br>${t.status} ${t.avg_ms}ms</div>
+    </div>`
+  ).join("");
+  const first=tl.length?tl[0].time.slice(0,16):"";
+  const last=tl.length?tl[tl.length-1].time.slice(0,16):"";
+
+  // SVG折线
+  const msVals=tl.filter(t=>t.avg_ms>0).map(t=>t.avg_ms);
+  const maxMs=msVals.length?Math.max(...msVals):1;
+  const W=600,H=50;
+  let svgPath="",svgArea="";
+  if(tl.length>1){
+    const pts=tl.map((t,i)=>{
+      const x=(i/(tl.length-1))*W;
+      const y=t.avg_ms>0?H-(t.avg_ms/maxMs)*(H-4)-2:H;
+      return `${x},${y}`;
+    });
+    svgPath=`<polyline points="${pts.join(" ")}" fill="none" stroke="#2f81f7" stroke-width="1.5" stroke-linejoin="round"/>`;
+    svgArea=`<polygon points="0,${H} ${pts.join(" ")} ${W},${H}" fill="rgba(47,129,247,.1)"/>`;
+  }
+
+  // 饼图数据
+  const total=sa.total||1;
+  const upPct=sa.up/total||0,downPct=sa.down/total||0,degPct=(sa.degraded||0)/total||0;
+
+  // MTTR/MTBF
+  const incidents=incData||[];
+  const closed=incidents.filter(i=>!i.is_open);
+  const mttr=closed.length?Math.round(closed.reduce((a,i)=>a+i.duration_seconds,0)/closed.length):0;
+  let mtbfStr="--";
+  if(closed.length>=2){
+    let gaps=[];
+    for(let i=1;i<closed.length;i++){
+      const g=(new Date(closed[i-1].end_time)-new Date(closed[i].start_time))/1000;
+      if(g>0) gaps.push(g);
+    }
+    if(gaps.length) mtbfStr=fmtSec(Math.round(gaps.reduce((a,b)=>a+b)/gaps.length));
+  }
+
+  // 历史汇总
+  const histKeys=["今天","昨天","本周","本月","最近7天","最近30天"];
+  const histHtml=histKeys.map(k=>{
+    const h=histData[k]||{};
+    const v=h.avail_all!=null?h.avail_all.toFixed(2)+"%":"--";
+    return `<div class="history-card">
+      <div class="history-label">${k}</div>
+      <div class="history-val ${avClass(h.avail_all)}">${v}</div>
+      <div class="history-down">${h.down_str||"--"} 停机</div>
+    </div>`;
+  }).join("");
+
+  // 故障明细
+  const incHtml=incidents.length?`
+    <table class="incident-table">
+      <thead><tr><th>开始时间</th><th>结束时间</th><th>持续时长</th><th>原因</th><th>备注</th></tr></thead>
+      <tbody>${incidents.map(i=>`
+        <tr>
+          <td style="${i.is_open?'color:var(--red);font-weight:700':''}">${i.start_time}</td>
+          <td>${i.end_time||'<span style="color:var(--red)">进行中</span>'}</td>
+          <td>${i.duration_str}</td>
+          <td style="color:var(--text3);font-size:11.5px">${i.error_msg||"--"}</td>
+          <td><input class="note-input" value="${(i.note||'').replace(/"/g,'&quot;')}"
+               placeholder="添加备注..." onblur="saveNote(${i.id},this.value)"
+               onkeydown="if(event.key==='Enter')this.blur()"></td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`:'<div class="empty" style="padding:16px;font-size:12px">✅ 该时间段内无故障事件</div>';
+
+  container.innerHTML=`
+    <div style="padding:0 16px 4px">
+      <div class="timeline-bar">${tlCells}</div>
+      <div class="timeline-labels"><span>${first}</span><span>${last}</span></div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-label"><span>响应时间</span><span>max: ${maxMs}ms</span></div>
+      <svg class="response-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        ${svgArea}${svgPath}
+      </svg>
+    </div>
+    <div class="detail-panel">
+      <div class="detail-grid">
+        <div class="pie-wrap">
+          <canvas id="pie-${sid}" width="120" height="120"></canvas>
+          <div class="pie-legend">
+            <div class="pie-legend-item"><div class="pie-dot" style="background:var(--green)"></div><span>正常 ${(upPct*100).toFixed(1)}%</span></div>
+            <div class="pie-legend-item"><div class="pie-dot" style="background:var(--red)"></div><span>故障 ${(downPct*100).toFixed(1)}%</span></div>
+            ${degPct>0?`<div class="pie-legend-item"><div class="pie-dot" style="background:var(--yellow)"></div><span>降级 ${(degPct*100).toFixed(1)}%</span></div>`:''}
+          </div>
+        </div>
+        <div>
+          <div class="metric-grid">
+            <div class="metric-card"><div class="metric-label">全天可用性</div>
+              <div class="metric-val ${avClass(sa.availability)}">${sa.availability!=null?sa.availability.toFixed(3)+"%":"--"}</div></div>
+            <div class="metric-card"><div class="metric-label">核心时段可用性</div>
+              <div class="metric-val ${avClass(sc.availability)}">${sc.availability!=null?sc.availability.toFixed(3)+"%":"--"}</div></div>
+            <div class="metric-card"><div class="metric-label">总停机时长</div>
+              <div class="metric-val ${incidents.length?'red':'green'}">${incidents.reduce((a,i)=>a+i.duration_seconds,0)?fmtSec(incidents.reduce((a,i)=>a+i.duration_seconds,0)):"0秒"}</div></div>
+            <div class="metric-card"><div class="metric-label">故障次数</div>
+              <div class="metric-val ${incidents.length?'red':'green'}">${incidents.length}</div></div>
+            <div class="metric-card"><div class="metric-label">MTTR</div>
+              <div class="metric-val">${mttr?fmtSec(mttr):"--"}</div></div>
+            <div class="metric-card"><div class="metric-label">MTBF</div>
+              <div class="metric-val">${mtbfStr}</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="section-title">🔴 故障明细</div>${incHtml}
+      </div>
+      <div style="margin-top:16px">
+        <div class="section-title">📊 历史对比</div>
+        <div class="history-grid">${histHtml}</div>
+      </div>
+    </div>`;
+  setTimeout(()=>drawPie(sid,upPct,downPct,degPct),50);
+}
+
+function drawPie(sid,up,down,deg){
+  const canvas=document.getElementById("pie-"+sid);
+  if(!canvas) return;
+  const ctx=canvas.getContext("2d");
+  const cx=60,cy=60,r=52;
+  const segs=[{p:up,c:"#3fb950"},{p:down,c:"#f85149"},{p:deg,c:"#d29922"}].filter(s=>s.p>0);
+  if(!segs.length){ctx.beginPath();ctx.arc(cx,cy,r,0,2*Math.PI);ctx.fillStyle="#30363d";ctx.fill();return;}
+  let angle=-Math.PI/2;
+  segs.forEach(s=>{
+    const end=angle+s.p*2*Math.PI;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,end);ctx.closePath();
+    ctx.fillStyle=s.c;ctx.fill();angle=end;
+  });
+  ctx.beginPath();ctx.arc(cx,cy,28,0,2*Math.PI);ctx.fillStyle="#161b22";ctx.fill();
+  ctx.fillStyle=up>=0.999?"#3fb950":up>=0.95?"#d29922":"#f85149";
+  ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText((up*100).toFixed(1)+"%",cx,cy+5);
+}
+
+async function expandAll(){
+  if(!systemsData.length) return;
+  const {start,end}=resolveRange(currentRange);
+  for(const s of systemsData){
+    const row=document.getElementById("srow-"+s.id);
+    if(!row||row.classList.contains("expanded")) continue;
+    row.classList.add("expanded");
+    expandedSystems.add(s.id);
+    await expandSystem(s.id,start,end,row);
+  }
+}
+function collapseAll(){
+  systemsData.forEach(s=>{
+    const row=document.getElementById("srow-"+s.id);
+    if(!row) return;
+    row.classList.remove("expanded");
+    expandedSystems.delete(s.id);
+    const tl=document.getElementById("tl-"+s.id);
+    if(tl) tl.innerHTML="";
+  });
+}
+
+async function saveNote(incId,note){
+  try{await fetch(`/api/incidents/${incId}`,{method:"PATCH",
+    headers:{"Content-Type":"application/json"},body:JSON.stringify({note})});}catch(e){}
+}
+
+// ════════════════════════════════════════
+//  系统管理
+// ════════════════════════════════════════
+let editingId=null,currentType="http";
+
+async function loadManage(){
+  document.getElementById("manage-table-wrap").innerHTML='<div class="loading"><div class="spinner"></div>加载中...</div>';
+  try{
+    const r=await fetch("/api/systems");
+    renderManageTable(await r.json());
+  }catch(e){document.getElementById("manage-table-wrap").innerHTML=`<div class="empty">加载失败</div>`;}
+}
+
+function renderManageTable(systems){
+  if(!systems.length){
+    document.getElementById("manage-table-wrap").innerHTML='<div class="empty">暂无系统，点击右上角添加</div>';return;
+  }
+  const rows=systems.map((s,idx)=>{
+    const tc={http:"type-http",mssql:"type-mssql",oracle:"type-oracle"}[s.type]||"";
+    const addr=s.type==="http"?(s.url||"--"):(s.db_host?`${s.db_host}:${s.db_port} / ${s.db_name}`:"--");
+    const cur={UP:"✅",DOWN:"❌",DEGRADED:"⚠️",UNKNOWN:"❓"}[s.current_status]||"❓";
+    return `<tr data-id="${s.id}" data-sort="${s.sort_order}" id="mrow-${s.id}"
+               draggable="true" ondragstart="dragStart(event)" ondragover="dragOver(event)"
+               ondragleave="dragLeave(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
+      <td><span class="drag-handle" title="拖拽排序">⠿</span></td>
+      <td><b>${s.name}</b></td>
+      <td><span class="type-badge ${tc}">${s.type.toUpperCase()}</span></td>
+      <td style="font-size:11.5px;color:var(--text2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${addr}">${addr}</td>
+      <td style="text-align:center">${s.poll_interval}分</td>
+      <td>${cur} <span style="font-size:11px;color:var(--text3)">${s.last_check?s.last_check.slice(11,19):""}</span></td>
+      <td><span style="color:${s.enabled?'var(--green)':'var(--text3)'}">${s.enabled?"启用":"禁用"}</span></td>
+      <td>
+        <div class="action-btns">
+          <div class="move-btns">
+            <button class="btn-move" onclick="moveRow(${s.id},-1)" title="上移">↑</button>
+            <button class="btn-move" onclick="moveRow(${s.id},1)" title="下移">↓</button>
+          </div>
+          <button class="btn-act" onclick="openEditModal(${s.id})">编辑</button>
+          <button class="btn-act toggle" onclick="toggleSystem2(${s.id})">${s.enabled?"禁用":"启用"}</button>
+          <button class="btn-act del" onclick="deleteSystem(${s.id},'${s.name}')">删除</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+  document.getElementById("manage-table-wrap").innerHTML=`
+    <table class="manage-table">
+      <thead><tr><th style="width:36px"></th><th>系统名称</th><th>类型</th><th>地址</th>
+        <th>间隔</th><th>当前状态</th><th>启用</th><th>操作</th></tr></thead>
+      <tbody id="manage-tbody">${rows}</tbody>
+    </table>`;
+}
+
+// 拖拽排序
+let dragSrc=null;
+function dragStart(e){dragSrc=e.currentTarget;e.currentTarget.classList.add("dragging");}
+function dragOver(e){e.preventDefault();e.currentTarget.classList.add("drag-over");}
+function dragLeave(e){e.currentTarget.classList.remove("drag-over");}
+function dragEnd(e){e.currentTarget.classList.remove("dragging");}
+function dragDrop(e){
+  e.preventDefault();
+  const target=e.currentTarget;
+  target.classList.remove("drag-over");
+  if(!dragSrc||dragSrc===target) return;
+  const tbody=document.getElementById("manage-tbody");
+  const rows=[...tbody.querySelectorAll("tr")];
+  const srcIdx=rows.indexOf(dragSrc);
+  const tgtIdx=rows.indexOf(target);
+  if(srcIdx<tgtIdx) target.after(dragSrc);
+  else target.before(dragSrc);
+  saveReorder();
+}
+
+async function saveReorder(){
+  const rows=[...document.getElementById("manage-tbody").querySelectorAll("tr")];
+  const data=rows.map((r,i)=>({id:parseInt(r.dataset.id),sort_order:i+1}));
+  try{
+    await fetch("/api/systems/reorder",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+    showToast("排序已保存","success");
+    loadMonitor();
+  }catch(e){showToast("保存失败","error");}
+}
+
+async function moveRow(sid,dir){
+  const tbody=document.getElementById("manage-tbody");
+  const rows=[...tbody.querySelectorAll("tr")];
+  const row=document.getElementById("mrow-"+sid);
+  const idx=rows.indexOf(row);
+  const newIdx=idx+dir;
+  if(newIdx<0||newIdx>=rows.length) return;
+  if(dir===-1) rows[newIdx].before(row);
+  else rows[newIdx].after(row);
+  saveReorder();
+}
+
+// ── 系统表单 ─────────────────────────────────────────────────
+function selectType(t){
+  currentType=t;
+  ["http","mssql","oracle"].forEach(x=>
+    document.getElementById("type-"+x).classList.toggle("selected",x===t));
+  document.getElementById("http-fields").style.display=t==="http"?"":"none";
+  document.getElementById("db-fields").style.display=t!=="http"?"":"none";
+  if(t==="mssql") document.getElementById("f-db-port").value="1433";
+  if(t==="oracle") document.getElementById("f-db-port").value="1521";
+}
+function resetForm(){
+  selectType("http");
+  ["f-name","f-url","f-url-secondary","f-db-host","f-db-name","f-db-user","f-db-password"]
+    .forEach(id=>document.getElementById(id).value="");
+  document.getElementById("f-expected-code").value="200,301,302";
+  document.getElementById("f-db-port").value="1433";
+  document.getElementById("f-interval").value="5";
+  document.getElementById("f-timeout").value="10";
+  document.getElementById("f-tds-version").value="7.2";
+  document.getElementById("f-enabled").checked=true;
+  document.getElementById("test-result").style.display="none";
+}
+function openAddModal(){
+  editingId=null;
+  document.getElementById("modal-title").textContent="➕ 添加监控系统";
+  resetForm();
+  document.getElementById("sys-modal").classList.add("show");
+}
+async function openEditModal(sid){
+  try{
+    const s=await fetch(`/api/systems/${sid}`).then(r=>r.json());
+    editingId=sid;
+    document.getElementById("modal-title").textContent="✏️ 编辑监控系统";
+    selectType(s.type);
+    document.getElementById("f-name").value=s.name||"";
+    document.getElementById("f-url").value=s.url||"";
+    document.getElementById("f-url-secondary").value=s.url_secondary||"";
+    document.getElementById("f-expected-code").value=s.expected_code||"200,301,302";
+    document.getElementById("f-db-host").value=s.db_host||"";
+    document.getElementById("f-db-port").value=s.db_port||1433;
+    document.getElementById("f-db-name").value=s.db_name||"";
+    document.getElementById("f-db-user").value=s.db_user||"";
+    document.getElementById("f-db-password").value="";
+    document.getElementById("f-db-password").placeholder="请输入新密码（必填）";
+    document.getElementById("f-tds-version").value=s.tds_version||"7.2";
+    document.getElementById("f-interval").value=s.poll_interval||5;
+    document.getElementById("f-timeout").value=s.timeout_sec||10;
+    document.getElementById("f-enabled").checked=!!s.enabled;
+    document.getElementById("test-result").style.display="none";
+    document.getElementById("sys-modal").classList.add("show");
+  }catch(e){showToast("加载失败","error");}
+}
+async function saveSystem(){
+  const name=document.getElementById("f-name").value.trim();
+  if(!name){showToast("请填写系统名称","error");return;}
+  const data={name,type:currentType,
+    enabled:document.getElementById("f-enabled").checked,
+    poll_interval:+document.getElementById("f-interval").value,
+    timeout_sec:+document.getElementById("f-timeout").value,
+    url:document.getElementById("f-url").value.trim(),
+    expected_code:document.getElementById("f-expected-code").value.trim(),
+    url_secondary:document.getElementById("f-url-secondary").value.trim(),
+    db_host:document.getElementById("f-db-host").value.trim(),
+    db_port:+document.getElementById("f-db-port").value,
+    db_name:document.getElementById("f-db-name").value.trim(),
+    db_user:document.getElementById("f-db-user").value.trim(),
+    db_password:document.getElementById("f-db-password").value,
+    tds_version:document.getElementById("f-tds-version").value,
+  };
+  if(currentType==="http"&&!data.url){showToast("请填写监控地址","error");return;}
+  if(currentType!=="http"&&(!data.db_host||!data.db_name)){showToast("请填写数据库地址和名称","error");return;}
+  if(currentType!=="http"&&!editingId&&!data.db_password){showToast("请输入数据库密码","error");return;}
+  if(currentType!=="http"&&editingId&&!data.db_password){showToast("请输入数据库密码","error");return;}
+  try{
+    const url=editingId?`/api/systems/${editingId}`:"/api/systems";
+    const method=editingId?"PUT":"POST";
+    const r=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+    const res=await r.json();
+    if(res.ok){showToast(editingId?"更新成功":"添加成功","success");closeModal("sys-modal");loadManage();loadMonitor();}
+    else showToast(res.error||"保存失败","error");
+  }catch(e){showToast("网络错误","error");}
+}
+async function testConnection(){
+  const btn=document.getElementById("btn-test");
+  const res=document.getElementById("test-result");
+  btn.textContent="⏳ 测试中...";btn.disabled=true;res.style.display="none";
+  const payload={id:editingId,type:currentType,
+    url:document.getElementById("f-url").value.trim(),
+    expected_code:document.getElementById("f-expected-code").value.trim(),
+    timeout_sec:+document.getElementById("f-timeout").value,
+    db_host:document.getElementById("f-db-host").value.trim(),
+    db_port:+document.getElementById("f-db-port").value,
+    db_name:document.getElementById("f-db-name").value.trim(),
+    db_user:document.getElementById("f-db-user").value.trim(),
+    db_password:document.getElementById("f-db-password").value,
+    tds_version:document.getElementById("f-tds-version").value,
+  };
+  try{
+    const r=await fetch("/api/systems/test",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    if(r.status===401){showToast("请先登录","error");btn.textContent="🔌 测试连接";btn.disabled=false;return;}
+    const d=await r.json();
+    res.style.display="block";
+    res.style.cssText=`display:block;padding:8px 12px;border-radius:6px;font-size:12.5px;font-weight:700;margin-bottom:10px;
+      background:${d.ok?"rgba(63,185,80,.15)":"rgba(248,81,73,.15)"};
+      color:${d.ok?"#3fb950":"#f85149"};
+      border:1px solid ${d.ok?"#3fb950":"#f85149"}`;
+    res.textContent=(d.ok?"✅ ":"❌ ")+(d.msg||d.error||"");
+  }catch(e){res.style.display="block";res.style.cssText="display:block;padding:8px 12px;border-radius:6px;background:rgba(248,81,73,.15);color:#f85149;border:1px solid #f85149;font-size:12.5px;font-weight:700;margin-bottom:10px";res.textContent="❌ 网络错误: "+e.message;}
+  btn.textContent="🔌 测试连接";btn.disabled=false;
+}
+async function toggleSystem2(sid){
+  try{const r=await fetch(`/api/systems/${sid}/toggle`,{method:"POST"});const d=await r.json();showToast(d.enabled?"已启用":"已禁用","info");loadManage();}catch(e){showToast("操作失败","error");}
+}
+async function deleteSystem(sid,name){
+  if(!confirm(`确定删除「${name}」？\n\n将同时删除所有历史监控数据，不可恢复。`)) return;
+  try{await fetch(`/api/systems/${sid}`,{method:"DELETE"});showToast("已删除","info");loadManage();loadMonitor();}catch(e){showToast("删除失败","error");}
+}
+
+// ════════════════════════════════════════
+//  导入导出
+// ════════════════════════════════════════
+async function exportSystems(){
+  try{
+    const data=await fetch("/api/systems").then(r=>r.json());
+    if(!data.length){showToast("暂无系统可导出","error");return;}
+    const headers=["id","name","type","enabled","poll_interval","timeout_sec",
+      "url","expected_code","url_secondary","db_host","db_port","db_name","db_user","db_password","tds_version","sort_order"];
+    const labels=["ID","系统名称","类型","启用(1/0)","轮询间隔(分钟)","超时时间(秒)",
+      "HTTP地址","期望状态码","HTTP副端点","数据库地址","数据库端口","数据库名","数据库账号","数据库密码","TDS版本","排序"];
+    const rows=data.map(s=>headers.map(h=>{
+      const v=s[h]??"";const str=String(v);
+      return str.includes(",")||str.includes("\n")||str.includes('"')?`"${str.replace(/"/g,'""')}"`:`${str}`;
+    }).join(","));
+    const csv="\uFEFF"+labels.join(",")+"\n"+rows.join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    a.download=`monitor_systems_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();URL.revokeObjectURL(a.href);
+    showToast(`已导出 ${data.length} 个系统配置`,"success");
+  }catch(e){showToast("导出失败","error");}
+}
+let importParsedData=null;
+function openImportModal(){
+  importParsedData=null;
+  document.getElementById("import-file-input").value="";
+  document.getElementById("import-drop-icon").textContent="📂";
+  document.getElementById("import-drop-text").textContent="点击选择 CSV 文件";
+  document.getElementById("import-drop-zone").style.borderColor="var(--border2)";
+  document.getElementById("import-preview").style.display="none";
+  document.getElementById("import-result").style.display="none";
+  document.getElementById("btn-do-import").style.display="none";
+  document.getElementById("import-modal").classList.add("show");
+}
+function importDragOver(e){e.preventDefault();document.getElementById("import-drop-zone").classList.add("dragover");}
+function importDragLeave(e){document.getElementById("import-drop-zone").classList.remove("dragover");}
+function importDrop(e){e.preventDefault();importDragLeave(e);const f=e.dataTransfer.files[0];if(f) handleImportFile(f);}
+function handleImportFile(file){
+  if(!file) return;
+  if(!file.name.toLowerCase().endsWith(".csv")){showImportResult(false,"请选择 CSV 格式文件");return;}
+  document.getElementById("import-drop-icon").textContent="📄";
+  document.getElementById("import-drop-text").textContent=file.name;
+  document.getElementById("import-drop-zone").style.borderColor="var(--green)";
+  const reader=new FileReader();
+  reader.onload=e=>previewCsv(e.target.result);
+  reader.readAsText(file,"utf-8");
+}
+function previewCsv(csvText){
+  if(csvText.charCodeAt(0)===0xFEFF) csvText=csvText.slice(1);
+  const lines=csvText.trim().split("\n").map(l=>l.trim()).filter(Boolean);
+  if(lines.length<2){showImportResult(false,"CSV内容为空或只有表头");return;}
+  const parsed=parseCsv(lines);
+  if(!parsed||!parsed.length){showImportResult(false,"解析失败，请确认文件格式");return;}
+  importParsedData=parsed;
+  const cols=["name","type","db_host","db_port","db_name","url"];
+  const colNames=["系统名称","类型","DB地址","端口","数据库名","HTTP地址"];
+  document.getElementById("import-preview-title").textContent=`解析到 ${parsed.length} 条记录（预览前5条）：`;
+  document.getElementById("import-preview-table").innerHTML=`
+    <thead><tr>${colNames.map(n=>`<th style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px">${n}</th>`).join("")}</tr></thead>
+    <tbody>${parsed.slice(0,5).map((row,i)=>`<tr style="${i%2?'background:var(--bg3)':''}">
+      ${cols.map(k=>`<td style="padding:4px 8px;border-bottom:1px solid var(--border);font-size:11px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${row[k]||'-'}</td>`).join("")}
+    </tr>`).join("")}</tbody>`;
+  document.getElementById("import-preview").style.display="block";
+  document.getElementById("import-result").style.display="none";
+  document.getElementById("btn-do-import").style.display="";
+}
+function parseCsv(lines){
+  function parseLine(line){
+    const result=[];let cur="",inQ=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+      else if(ch===","&&!inQ){result.push(cur);cur="";}
+      else cur+=ch;
+    }
+    result.push(cur);return result;
+  }
+  const colMap={"ID":"id","系统名称":"name","类型":"type","启用(1/0)":"enabled",
+    "轮询间隔(分钟)":"poll_interval","超时时间(秒)":"timeout_sec",
+    "HTTP地址":"url","期望状态码":"expected_code","HTTP副端点":"url_secondary",
+    "数据库地址":"db_host","数据库端口":"db_port","数据库名":"db_name",
+    "数据库账号":"db_user","数据库密码":"db_password","TDS版本":"tds_version","排序":"sort_order",
+    "name":"name","type":"type","enabled":"enabled","poll_interval":"poll_interval",
+    "timeout_sec":"timeout_sec","url":"url","expected_code":"expected_code",
+    "url_secondary":"url_secondary","db_host":"db_host","db_port":"db_port",
+    "db_name":"db_name","db_user":"db_user","db_password":"db_password","tds_version":"tds_version"};
+  const headerRow=parseLine(lines[0]);
+  const cols=headerRow.map(h=>colMap[h.trim()]||h.trim());
+  return lines.slice(1).filter(l=>l.trim()).map(line=>{
+    const vals=parseLine(line);
+    const row={};cols.forEach((col,i)=>{if(col) row[col]=(vals[i]||"").trim();});
+    return row;
+  }).filter(r=>r.name&&r.type);
+}
+async function doImport(){
+  if(!importParsedData||!importParsedData.length){showImportResult(false,"没有可导入的数据");return;}
+  const btn=document.getElementById("btn-do-import");
+  btn.textContent="⏳ 导入中...";btn.disabled=true;
+  let success=0,skip=0,errors=[];
+  for(const row of importParsedData){
+    if(!["http","mssql","oracle"].includes(row.type)){skip++;continue;}
+    const payload={name:row.name,type:row.type,enabled:row.enabled!=="0",
+      poll_interval:parseInt(row.poll_interval)||5,timeout_sec:parseInt(row.timeout_sec)||10,
+      url:row.url||"",expected_code:row.expected_code||"200,301,302",
+      url_secondary:row.url_secondary||"",db_host:row.db_host||"",
+      db_port:parseInt(row.db_port)||1433,db_name:row.db_name||"",
+      db_user:row.db_user||"",db_password:row.db_password||"",
+      tds_version:row.tds_version||"7.2",sort_order:parseInt(row.sort_order)||9999};
+    try{
+      const r=await fetch("/api/systems",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      const res=await r.json();
+      if(res.ok) success++;else{skip++;errors.push(`${row.name}: ${res.error}`);}
+    }catch(e){skip++;errors.push(`${row.name}: 网络错误`);}
+  }
+  btn.textContent="✅ 确认导入";btn.disabled=false;
+  let msg=`导入完成：成功 ${success} 个，跳过 ${skip} 个`;
+  if(errors.length) msg+="\n"+errors.slice(0,3).join("；");
+  showImportResult(success>0,msg);
+  if(success>0){loadManage();loadMonitor();
+    const needPwd=importParsedData.filter(r=>r.type!=="http"&&!r.db_password).length;
+    if(needPwd>0) setTimeout(()=>showToast(`⚠️ ${needPwd} 个数据库系统密码为空，请编辑补充`,"error"),2000);}
+}
+function showImportResult(ok,msg){
+  const el=document.getElementById("import-result");
+  el.style.cssText=`display:block;padding:8px 12px;border-radius:6px;font-size:12.5px;font-weight:700;
+    background:${ok?"rgba(63,185,80,.15)":"rgba(248,81,73,.15)"};
+    color:${ok?"#3fb950":"#f85149"};border:1px solid ${ok?"#3fb950":"#f85149"}`;
+  el.innerHTML=(ok?"✅ ":"❌ ")+msg.replace(/\n/g,"<br>");
+}
+function downloadTemplate(){
+  const labels=["ID","系统名称","类型","启用(1/0)","轮询间隔(分钟)","超时时间(秒)",
+    "HTTP地址","期望状态码","HTTP副端点","数据库地址","数据库端口","数据库名","数据库账号","数据库密码","TDS版本","排序"];
+  const examples=[
+    ["","业务系统A","http","1","5","10","http://192.168.1.100:8080/index","200,301,302","","","","","","","","1"],
+    ["","业务系统B","http","1","5","10","https://app.example.com","200,301,302","https://www.example.com","","","","","","","2"],
+    ["","数据库A","mssql","1","5","10","","","","192.168.1.101","1433","MyDatabase","monitor","your_password","7.3","3"],
+    ["","数据库B","mssql","1","5","10","","","","192.168.1.102","8081","AppDB","monitor","your_password","7.2","4"],
+    ["","Oracle数据库","oracle","1","5","10","","","","192.168.1.103","1521","ORCL","monitor","your_password","","5"],
+  ];
+  const rows=examples.map(r=>r.map(v=>String(v).includes(",")?`"${v}"`:v).join(","));
+  const csv="\uFEFF"+labels.join(",")+"\n"+rows.join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download="monitor_import_template.csv";a.click();URL.revokeObjectURL(a.href);
+  showToast("模板已下载，Excel打开填写后另存为CSV再导入","info");
+}
+
+// ════════════════════════════════════════
+//  通知设置
+// ════════════════════════════════════════
+async function loadNotify(){
+  document.getElementById("notify-wrap").innerHTML='<div class="loading"><div class="spinner"></div>加载中...</div>';
+  try{
+    const data=await fetch("/api/notify/config").then(r=>r.json());
+    renderNotify(data);
+  }catch(e){document.getElementById("notify-wrap").innerHTML='<div class="empty">加载失败</div>';}
+}
+function renderNotify(data){
+  const ch=data.channels||{};
+  const rules=data.rules||{};
+  const channels=[
+    {key:"email",icon:"📧",name:"邮件 SMTP",fields:[
+      {k:"smtp_host",l:"SMTP 服务器",p:"mail.example.com"},{k:"smtp_port",l:"端口",p:"465",half:true},
+      {k:"username",l:"用户名",p:"notify@example.com"},{k:"password",l:"密码",p:"",type:"password"},
+      {k:"from_addr",l:"发件人地址",p:"notify@example.com (可选，默认同用户名)"},
+      {k:"to_addrs",l:"收件人（多个用逗号分隔）",p:"admin@example.com,ops@example.com"},
+      {k:"ssl_mode",l:"加密方式",type:"ssl_radio"},
+    ]},
+    {key:"wecom",icon:"💬",name:"企业微信机器人",fields:[
+      {k:"webhook_url",l:"Webhook URL",p:"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"},
+    ]},
+    {key:"dingtalk",icon:"📱",name:"钉钉机器人",fields:[
+      {k:"webhook_url",l:"Webhook URL",p:"https://oapi.dingtalk.com/robot/send?access_token=xxx"},
+    ]},
+    {key:"feishu",icon:"🪁",name:"飞书机器人",fields:[
+      {k:"webhook_url",l:"Webhook URL",p:"https://open.feishu.cn/open-apis/bot/v2/hook/xxx"},
+    ]},
+    {key:"webhook",icon:"🔗",name:"自定义 Webhook",fields:[
+      {k:"webhook_url",l:"Webhook URL",p:"https://your-api.example.com/alert"},
+      {k:"method",l:"请求方法",p:"POST"},{k:"content_type",l:"Content-Type",p:"application/json"},
+      {k:"body_template",l:"Body 模板（可用 {title} {body} 占位符）",
+       p:'{"title":"{title}","content":"{body}"}',type:"textarea"},
+    ]},
+  ];
+
+  const chHtml=channels.map(c=>{
+    const cfg=(ch[c.key]||{}).config||{};
+    const enabled=(ch[c.key]||{}).enabled||false;
+    const fieldsHtml=c.fields.map(f=>{
+      if(f.type==="ssl_radio"){
+        const v=cfg[f.k]||"ssl";
+        return `<div class="notify-field" style="grid-column:1/-1">
+          <label>${f.l}</label>
+          <div class="ssl-radio-group">
+            <label><input type="radio" name="ssl_${c.key}" value="ssl" ${v==="ssl"?"checked":""}> 启用SSL</label>
+            <label><input type="radio" name="ssl_${c.key}" value="tls" ${v==="tls"?"checked":""}> 启用TLS</label>
+            <label><input type="radio" name="ssl_${c.key}" value="none" ${v==="none"?"checked":""}> 无</label>
+          </div>
+        </div>`;
+      }
+      if(f.type==="textarea"){
+        return `<div class="notify-field" style="grid-column:1/-1">
+          <label>${f.l}</label>
+          <textarea class="notify-input" id="nc_${c.key}_${f.k}" rows="3" placeholder="${f.p}">${cfg[f.k]||""}</textarea>
+        </div>`;
+      }
+      const colSpan=f.half?"":"style='grid-column:1/-1'";
+      return `<div class="notify-field" ${colSpan}>
+        <label>${f.l}</label>
+        <input class="notify-input" id="nc_${c.key}_${f.k}" type="${f.type||'text'}"
+          placeholder="${f.p}" value="${f.type==='password'&&cfg[f.k]?'••••••••':(cfg[f.k]||'')}">
+      </div>`;
+    }).join("");
+    return `<div class="notify-channel">
+      <div class="notify-ch-header" onclick="toggleChannel('${c.key}')">
+        <span class="notify-ch-icon">${c.icon}</span>
+        <span class="notify-ch-name">${c.name}</span>
+        <label class="toggle-switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="nc_${c.key}_enabled" ${enabled?"checked":""}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="notify-ch-body hidden" id="ch-body-${c.key}">
+        <div class="notify-form-grid">${fieldsHtml}</div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+          <button class="btn-sm" onclick="testNotify('${c.key}')" style="border-color:var(--blue);color:var(--blue)">
+            📤 发送测试
+          </button>
+          <span id="test-notify-${c.key}" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("notify-wrap").innerHTML=`
+    <div class="rules-card">
+      <div class="rules-title">⚙️ 触发规则</div>
+      <div class="rules-grid">
+        <div class="rule-item"><input type="checkbox" id="rule-down" ${rules.notify_on_down?"checked":""}><label for="rule-down">DOWN 故障立即通知</label></div>
+        <div class="rule-item"><input type="checkbox" id="rule-deg" ${rules.notify_on_degraded?"checked":""}><label for="rule-deg">DEGRADED 降级通知</label></div>
+        <div class="rule-item"><input type="checkbox" id="rule-rec" ${rules.notify_on_recover?"checked":""}><label for="rule-rec">故障恢复通知</label></div>
+      </div>
+      <div class="cooldown-row">
+        同一系统
+        <input type="number" class="cooldown-input" id="rule-cooldown" value="${rules.cooldown_minutes||30}" min="1" max="1440">
+        分钟内不重复通知（恢复通知不受此限制）
+      </div>
+    </div>
+    <div class="notify-grid">${chHtml}</div>
+    <button class="notify-save-btn" onclick="saveNotify()">💾 保存所有通知配置</button>`;
+}
+
+function toggleChannel(key){
+  const body=document.getElementById("ch-body-"+key);
+  body.classList.toggle("hidden");
+}
+
+async function testNotify(key){
+  const el=document.getElementById("test-notify-"+key);
+  el.textContent="发送中...";el.style.color="var(--text3)";
+  const cfg=collectChannelConfig(key);
+  try{
+    const r=await fetch("/api/notify/test",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({channel:key,config:cfg})});
+    const d=await r.json();
+    el.textContent=d.ok?"✅ 发送成功":"❌ "+d.error;
+    el.style.color=d.ok?"var(--green)":"var(--red)";
+  }catch(e){el.textContent="❌ 网络错误";el.style.color="var(--red)";}
+}
+
+function collectChannelConfig(key){
+  const inputs=document.querySelectorAll(`[id^='nc_${key}_']:not([id$='_enabled'])`);
+  const cfg={};
+  inputs.forEach(el=>{
+    const fieldKey=el.id.replace(`nc_${key}_`,"");
+    cfg[fieldKey]=el.value;
+  });
+  // SSL radio
+  const sslRadio=document.querySelector(`input[name='ssl_${key}']:checked`);
+  if(sslRadio) cfg.ssl_mode=sslRadio.value;
+  return cfg;
+}
+
+async function saveNotify(){
+  const channels={};
+  ["email","wecom","dingtalk","feishu","webhook"].forEach(key=>{
+    const enabled=document.getElementById(`nc_${key}_enabled`)?.checked||false;
+    const cfg=collectChannelConfig(key);
+    channels[key]={enabled,config:cfg};
+  });
+  const rules={
+    notify_on_down:document.getElementById("rule-down")?.checked?1:0,
+    notify_on_degraded:document.getElementById("rule-deg")?.checked?1:0,
+    notify_on_recover:document.getElementById("rule-rec")?.checked?1:0,
+    cooldown_minutes:parseInt(document.getElementById("rule-cooldown")?.value)||30,
+  };
+  try{
+    const r=await fetch("/api/notify/config",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({channels,rules})});
+    const d=await r.json();
+    if(d.ok) showToast("通知配置已保存","success");
+    else showToast(d.error||"保存失败","error");
+  }catch(e){showToast("网络错误","error");}
+}
+
+// ════════════════════════════════════════
+//  修改密码
+// ════════════════════════════════════════
+function openPwdModal(){
+  ["pwd-old","pwd-new1","pwd-new2"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("pwd-modal").classList.add("show");
+}
+async function doChangePwd(){
+  const old=document.getElementById("pwd-old").value.trim();
+  const n1=document.getElementById("pwd-new1").value.trim();
+  const n2=document.getElementById("pwd-new2").value.trim();
+  if(!old||!n1||!n2){showToast("请填写所有密码字段","error");return;}
+  if(n1!==n2){showToast("两次新密码不一致","error");return;}
+  if(n1.length<4){showToast("新密码至少4位","error");return;}
+  try{
+    const r=await fetch("/api/auth/change_password",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({old_password:old,new_password:n1})});
+    const d=await r.json();
+    if(d.ok){closeModal("pwd-modal");showToast("密码修改成功","success");}
+    else showToast(d.error||"修改失败","error");
+  }catch(e){showToast("网络错误","error");}
+}
+
+// ════════════════════════════════════════
+//  通用模态框
+// ════════════════════════════════════════
+function closeModal(id){
+  document.getElementById(id).classList.remove("show");
+  if(id==="sys-modal"){
+    const tr=document.getElementById("test-result");
+    if(tr){tr.style.display="none";tr.textContent="";}
+  }
+  if(id==="import-modal") importParsedData=null;
+}
+["sys-modal","alert-modal","import-modal","pwd-modal"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener("click",function(e){if(e.target===this) closeModal(id);});
+});
+
+// ════════════════════════════════════════
+//  Toast
+// ════════════════════════════════════════
+function showToast(msg,type="info"){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2500);
+}
+
+// ════════════════════════════════════════
+//  初始化
+// ════════════════════════════════════════
+checkAuthStatus();
+initQuickGrid();
+updateRecentList();
+loadMonitor();
+setAutoRefresh(60);
+</script>
+</body>
+</html>

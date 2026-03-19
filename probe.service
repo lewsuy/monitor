@@ -1,0 +1,16 @@
+[Unit]
+Description=系统可用性监控平台 - 探针服务
+After=network.target monitor.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/monitor
+ExecStart=/usr/bin/python3 /opt/monitor/monitor_probe.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

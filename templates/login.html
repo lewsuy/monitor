@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>登录 · 系统可用性监控</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif;
+     background:linear-gradient(135deg,#0d1b2a 0%,#1a3a5c 100%);
+     min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:#fff;border-radius:12px;padding:40px 44px;width:380px;
+      box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.logo{text-align:center;margin-bottom:28px}
+.logo-icon{font-size:40px;margin-bottom:8px}
+.logo-title{font-size:18px;font-weight:700;color:#0d1b2a;letter-spacing:1px}
+.logo-sub{font-size:11.5px;color:#999;margin-top:4px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:#444;margin-bottom:6px}
+.field input{width:100%;border:1.5px solid #dde3ec;border-radius:7px;
+             padding:10px 13px;font-size:13px;outline:none;font-family:inherit}
+.field input:focus{border-color:#2E75B6;background:#f6f9ff}
+.btn-login{width:100%;background:#0d1b2a;color:#fff;border:none;border-radius:7px;
+           padding:12px;font-size:14px;font-weight:700;cursor:pointer;
+           font-family:inherit;margin-top:6px;letter-spacing:1px}
+.btn-login:hover{background:#1a3a5c}
+.error{background:#fff3f3;border:1.5px solid #ffcdd2;border-radius:7px;
+       padding:9px 13px;color:#c62828;font-size:12.5px;margin-bottom:16px;text-align:center}
+.footer{text-align:center;font-size:11px;color:#bbb;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">📡</div>
+    <div class="logo-title">系统可用性监控平台</div>
+    <div class="logo-sub">Infrastructure Availability Monitor</div>
+  </div>
+  {% if error %}<div class="error">⚠️ {{ error }}</div>{% endif %}
+  <form method="POST">
+    <div class="field"><label>用户名</label>
+      <input type="text" name="username" autocomplete="username" autofocus required></div>
+    <div class="field"><label>密码</label>
+      <input type="password" name="password" autocomplete="current-password" required></div>
+    <button type="submit" class="btn-login">登 录</button>
+  </form>
+  <div class="footer">Powered by Flask · SQLite</div>
+</div>
+</body>
+</html>
