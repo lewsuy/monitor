@@ -542,7 +542,8 @@ def run_once():
         if not should_probe(sid, interval, probe_state):
             continue
 
-        result = probe_system(dict(s))
+        s      = dict(s)
+        result = probe_system(s)
         prev   = probe_state.get(sid, {}).get("status", "")
 
         icon = {"UP": "✅", "DOWN": "❌", "DEGRADED": "⚠️"}.get(result["status"], "❓")
